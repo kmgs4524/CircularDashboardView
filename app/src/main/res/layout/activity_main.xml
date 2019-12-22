@@ -9,6 +9,7 @@
     <com.york.customview.DashboardView
         android:layout_width="300dp"
         android:layout_height="300dp"
+        app:labelText="Mr.X"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

@@ -20,50 +20,99 @@ import timber.log.Timber
  * @author MP_User
  * created on 2019/12/12
  */
-class DashboardView: FrameLayout {
+class DashboardView : FrameLayout {
 
     constructor(context: Context) : super(context) {
         initView()
     }
 
-    constructor(context: Context, attributeSet: AttributeSet): super(context, attributeSet) {
-        initView()
+    constructor(context: Context, attributeSet: AttributeSet) : super(context, attributeSet) {
+        context.theme.obtainStyledAttributes(
+            attributeSet,
+            R.styleable.DashboardView,
+            0,
+            0
+        ).apply {
+            try {
+                val labelText = getString(R.styleable.DashboardView_labelText) ?: ""
+                initView(labelText)
+            } finally {
+                recycle()
+            }
+        }
     }
 
-    private fun initView() {
-        val circleMetersView = CircleMetersView(context)
+    private fun initView(labelText: String = "") {
+        val circleMetersView = CircleMetersView(context).apply {
+            layoutParams = LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            tag = "CIRCLE_METERS"
+        }
         val percentageText = AppCompatTextView(context).apply {
-            layoutParams = LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,ViewGroup.LayoutParams.WRAP_CONTENT)
+            layoutParams = LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
             tag = "PERCENTAGE_TEXT"
-            textSize = 14f
+            textSize = 24f
             setTextColor(Color.WHITE)
             text = "Hello"
         }
+        val labelTextView = AppCompatTextView(context).apply {
+            layoutParams = LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            tag = "LABEL_TEXT"
+            textSize = 14f
+            setTextColor(Color.LTGRAY)
+            text = labelText
+        }
         addView(circleMetersView)
         addView(percentageText)
+        addView(labelTextView)
     }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
-        Timber.d("changed: $changed left: ${convertPxToDp(left)} top: ${convertPxToDp(top)} " +
-            "right: ${convertPxToDp(right)} bottom: ${convertPxToDp(bottom)}")
-        // for (i in 0 until childCount) {
-        //     val child = indexOfChild(i)
-        // }
-
-        val parentMeasuredWidth = measuredWidth
-        val parentMeasuredHeight = measuredHeight
-        val percentageText = findViewWithTag<TextView>("PERCENTAGE_TEXT")
-        percentageText.layout(
-                left + (parentMeasuredWidth / 2),
-                top + (parentMeasuredHeight / 2),
-                left + (parentMeasuredWidth / 2) + percentageText.measuredWidth,
-                top + (parentMeasuredHeight / 2) + percentageText.measuredHeight
+        Timber.d(
+            "changed: $changed left: ${convertPxToDp(left)} top: ${convertPxToDp(top)} " +
+                    "right: ${convertPxToDp(right)} bottom: ${convertPxToDp(bottom)}"
         )
+
+        val circleMetersView = findViewWithTag<CircleMetersView>("CIRCLE_METERS")
+        circleMetersView.layout(
+            0,
+            (measuredHeight / 2) - (circleMetersView.measuredHeight / 2),
+            circleMetersView.measuredWidth,
+            (measuredHeight / 2) + (circleMetersView.measuredHeight / 2)
+        )
+
+        // Set percentage text at center of parent view
+        val percentageText = findViewWithTag<TextView>("PERCENTAGE_TEXT")
+        val percentageTextBottom = (measuredHeight / 2) + (percentageText.measuredHeight / 2)
+        percentageText.layout(
+            (measuredWidth / 2) - (percentageText.measuredWidth / 2),
+            measuredHeight / 2 - (percentageText.measuredHeight / 2),
+            (measuredWidth / 2) + (percentageText.measuredWidth / 2),
+            percentageTextBottom
+        )
+        // Set label text under percentage text
+        val labelText = findViewWithTag<TextView>("LABEL_TEXT")
+        val labelTextTop = percentageTextBottom
+        val labelTextBottom = labelTextTop + labelText.measuredHeight
+        labelText.layout(
+            (this.measuredWidth / 2) - (labelText.measuredWidth / 2),
+            labelTextTop,
+            (this.measuredWidth / 2) + (labelText.measuredWidth / 2),
+            labelTextBottom
+        )
+
 
         Timber.d("child text: $percentageText tag: ${percentageText.tag}")
     }
-
 
     inner class CircleMetersView : View {
 
@@ -74,9 +123,9 @@ class DashboardView: FrameLayout {
 
         private var drawMatrix = Matrix()
 
-        constructor(context: Context, attributeSet: AttributeSet): super(context, attributeSet)
+        constructor(context: Context, attributeSet: AttributeSet) : super(context, attributeSet)
 
-        constructor(context: Context): super(context)
+        constructor(context: Context) : super(context)
 
         override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
             super.onMeasure(widthMeasureSpec, heightMeasureSpec)
@@ -91,13 +140,17 @@ class DashboardView: FrameLayout {
             val canvas = canvas ?: return
 
             // 初始化畫布背景色
-
             paint.style = Paint.Style.FILL
             paint.color = Color.BLUE
             canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
 
-            Log.d(this.javaClass.simpleName,
-                "width: ${DensityUtils.convertPixelToDp(width.toFloat(), context)} height: ${DensityUtils.convertPixelToDp(height.toFloat(), context)}")
+            Log.d(
+                this.javaClass.simpleName,
+                "width: ${DensityUtils.convertPixelToDp(
+                    width.toFloat(),
+                    context
+                )} height: ${DensityUtils.convertPixelToDp(height.toFloat(), context)}"
+            )
             // 初始化中心點
             center.x = width / 2
             center.y = height / 2
@@ -108,8 +161,8 @@ class DashboardView: FrameLayout {
 
             // val drawMatrix = Matrix()
             // 試畫線
-            // path.moveTo(center.x.toFloat(), center.y.toFloat())
-            // path.lineTo(100f, 50f)
+//             path.moveTo(center.x.toFloat(), center.y.toFloat())
+//             path.lineTo(100f, 50f)
             // val cx = width.toFloat() / 2
             // val cy = height.toFloat() / 2
             // drawMatrix.postTranslate(cx, cy)
