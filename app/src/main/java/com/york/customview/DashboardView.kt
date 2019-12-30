@@ -1,12 +1,7 @@
 package com.york.customview
 
 import android.content.Context
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Matrix
-import android.graphics.Paint
-import android.graphics.Path
-import android.graphics.Point
+import android.graphics.*
 import android.util.AttributeSet
 import android.util.Log
 import android.view.View
@@ -34,15 +29,25 @@ class DashboardView : FrameLayout {
             0
         ).apply {
             try {
+                val percent  = getInt(R.styleable.DashboardView_percent, 0)
+                val percentTextSize = getString(R.styleable.DashboardView_percentTextSize) ?: "18sp"
                 val labelText = getString(R.styleable.DashboardView_labelText) ?: ""
-                initView(labelText)
+                val labelTextSize = getString(R.styleable.DashboardView_labelTextSize) ?: "12sp"
+                val labelTextColor = getInt(R.styleable.DashboardView_labelTextColor, Color.LTGRAY)
+                initView(percent, percentTextSize, labelText, labelTextSize, labelTextColor)
             } finally {
                 recycle()
             }
         }
     }
 
-    private fun initView(labelText: String = "") {
+    private fun initView(
+        percent: Int = 0,
+        percentTextSize: String = "18sp",
+        labelText: String = "",
+        labelTextSize: String = "",
+        labelTextColor: Int = Color.LTGRAY
+    ) {
         val circleMetersView = CircleMetersView(context).apply {
             layoutParams = LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -56,9 +61,10 @@ class DashboardView : FrameLayout {
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
             tag = "PERCENTAGE_TEXT"
-            textSize = 24f
-            setTextColor(Color.WHITE)
-            text = "Hello"
+            // 剔除 sp, dp 單位，只截取數字
+            textSize = percentTextSize.substring(0 until percentTextSize.length - 2).toFloat()
+            setTextColor(Color.BLACK)
+            text = "$percent%"
         }
         val labelTextView = AppCompatTextView(context).apply {
             layoutParams = LayoutParams(
@@ -66,8 +72,8 @@ class DashboardView : FrameLayout {
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
             tag = "LABEL_TEXT"
-            textSize = 14f
-            setTextColor(Color.LTGRAY)
+            textSize = labelTextSize.substring(0 until labelTextSize.length - 2).toFloat()
+            setTextColor(labelTextColor)
             text = labelText
         }
         addView(circleMetersView)
@@ -110,7 +116,6 @@ class DashboardView : FrameLayout {
             labelTextBottom
         )
 
-
         Timber.d("child text: $percentageText tag: ${percentageText.tag}")
     }
 
@@ -140,9 +145,9 @@ class DashboardView : FrameLayout {
             val canvas = canvas ?: return
 
             // 初始化畫布背景色
-            paint.style = Paint.Style.FILL
-            paint.color = Color.BLUE
-            canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
+//            paint.style = Paint.Style.FILL
+//            paint.color = Color.BLUE
+//            canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
 
             Log.d(
                 this.javaClass.simpleName,
@@ -160,24 +165,10 @@ class DashboardView : FrameLayout {
             paint.strokeWidth = 8f
 
             // val drawMatrix = Matrix()
-            // 試畫線
-//             path.moveTo(center.x.toFloat(), center.y.toFloat())
-//             path.lineTo(100f, 50f)
-            // val cx = width.toFloat() / 2
-            // val cy = height.toFloat() / 2
-            // drawMatrix.postTranslate(cx, cy)
-            // path.transform(drawMatrix)
-            // canvas.drawPath(path, paint)
-            // paint.color = Color.BLACK
-            // paint.strokeWidth = 8f
-            // path.lineTo(200f, 200f)
-            // drawMatrix.postTranslate(-cx, -cy)
-            // path.transform(drawMatrix)
-            // canvas.drawPath(path, paint)
 
             radius = center.x - (paintWidth / 5) + DensityUtils.convertDpToPixel(7, context).toInt()
-            var startDegree = 165f  // 165f
-            var endDegree = 380f
+            var startDegree = 150f  // 165f
+            var endDegree = 395f
             var currentDegree = startDegree
 
             while (currentDegree <= endDegree) {
@@ -185,17 +176,20 @@ class DashboardView : FrameLayout {
                 drawMatrix.postTranslate(center.x.toFloat(), center.y.toFloat())
                 path.moveTo(radius.toFloat(), 0f)
                 setPaintInnerStyle()
-                drawInnerMeters(canvas, paint, path, drawMatrix)
+                drawInnerMeters(canvas, paint, path, drawMatrix, currentDegree)
                 setPaintOuterStyle()
                 drawOuterMeters(canvas, paint, path, drawMatrix)
                 canvas.drawPath(path, paint)
                 path.reset()
-                currentDegree += 5.625f
+                currentDegree += 6f // 5.625f
                 Log.d(TAG, "currentDegree: $currentDegree")
             }
         }
 
-        private fun drawInnerMeters(canvas: Canvas, paint: Paint, path: Path, matrix: Matrix) {
+        private fun drawInnerMeters(canvas: Canvas, paint: Paint, path: Path, matrix: Matrix, degree: Float) {
+            if (degree == 180f || degree == 270f || degree == 360f) {
+                path.moveTo(radius - 20f, 0f)
+            }
             path.lineTo(radius + convertDpToPx(7), 0f)
             path.transform(matrix)
             canvas.drawPath(path, paint)

@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <declare-styleable name="DashboardView">
+        <attr name="percent" format="integer" />
+        <attr name="percentTextSize" format="string" />
         <attr name="labelText" format="string" />
+        <attr name="labelTextSize" format="string" />
+        <attr name="labelTextColor" format="string" />
     </declare-styleable>
 </resources>
