@@ -1,4 +1,4 @@
-package com.york.customview
+package com.york.circulardashboardview
 
 import android.content.Context
 

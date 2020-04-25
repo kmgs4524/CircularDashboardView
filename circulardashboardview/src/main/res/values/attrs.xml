@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <declare-styleable name="DashboardView">
+    <declare-styleable name="CircularDashboardView">
         <attr name="percent" format="integer" />
         <attr name="percentTextSize" format="string" />
         <attr name="labelText" format="string" />

@@ -1,4 +1,4 @@
-package com.york.customview
+package com.york.circulardashboardview
 
 import android.content.Context
 import android.graphics.*
@@ -9,13 +9,12 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.appcompat.widget.AppCompatTextView
-import timber.log.Timber
 
 /**
  * @author MP_User
  * created on 2019/12/12
  */
-class DashboardView : FrameLayout {
+class CircularDashboardView : FrameLayout {
 
     constructor(context: Context) : super(context) {
         initView()
@@ -24,17 +23,17 @@ class DashboardView : FrameLayout {
     constructor(context: Context, attributeSet: AttributeSet) : super(context, attributeSet) {
         context.theme.obtainStyledAttributes(
             attributeSet,
-            R.styleable.DashboardView,
+            R.styleable.CircularDashboardView,
             0,
             0
         ).apply {
             try {
-                val percent  = getInt(R.styleable.DashboardView_percent, 0)
-                val percentTextSize = getString(R.styleable.DashboardView_percentTextSize) ?: "18sp"
-                val labelText = getString(R.styleable.DashboardView_labelText) ?: ""
-                val labelTextSize = getString(R.styleable.DashboardView_labelTextSize) ?: "12sp"
-                val labelTextColor = getInt(R.styleable.DashboardView_labelTextColor, Color.LTGRAY)
-                initView(percent, percentTextSize, labelText, labelTextSize, labelTextColor)
+                val percent  = getInt(R.styleable.CircularDashboardView_percent, 0)
+                val percentTextSize = getString(R.styleable.CircularDashboardView_percentTextSize) ?: "18sp"
+                val labelText = getString(R.styleable.CircularDashboardView_labelText) ?: ""
+                val labelTextSize = getString(R.styleable.CircularDashboardView_labelTextSize) ?: "12sp"
+                val labelTextColor = getInt(R.styleable.CircularDashboardView_labelTextColor, Color.LTGRAY)
+                initView(percent, percentTextSize, labelText, labelTextSize, labelTextColor, attributeSet)
             } finally {
                 recycle()
             }
@@ -46,9 +45,10 @@ class DashboardView : FrameLayout {
         percentTextSize: String = "18sp",
         labelText: String = "",
         labelTextSize: String = "",
-        labelTextColor: Int = Color.LTGRAY
+        labelTextColor: Int = Color.LTGRAY,
+        attributeSet: AttributeSet? = null
     ) {
-        val circleMetersView = CircleMetersView(context).apply {
+        val circleMetersView = CircleMetersView(context, attributeSet).apply {
             layoutParams = LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
@@ -83,7 +83,7 @@ class DashboardView : FrameLayout {
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
-        Timber.d(
+        Log.d(TAG,
             "changed: $changed left: ${convertPxToDp(left)} top: ${convertPxToDp(top)} " +
                     "right: ${convertPxToDp(right)} bottom: ${convertPxToDp(bottom)}"
         )
@@ -101,7 +101,8 @@ class DashboardView : FrameLayout {
         val percentageTextBottom = (measuredHeight / 2) + (percentageText.measuredHeight / 2)
         percentageText.layout(
             (measuredWidth / 2) - (percentageText.measuredWidth / 2),
-            measuredHeight / 2 - (percentageText.measuredHeight / 2),
+            // (measuredHeight / 2) - (percentageText.measuredHeight / 2)
+            (measuredHeight / 3),
             (measuredWidth / 2) + (percentageText.measuredWidth / 2),
             percentageTextBottom
         )
@@ -116,7 +117,7 @@ class DashboardView : FrameLayout {
             labelTextBottom
         )
 
-        Timber.d("child text: $percentageText tag: ${percentageText.tag}")
+        Log.d(TAG, "child text: $percentageText tag: ${percentageText.tag}")
     }
 
     inner class CircleMetersView : View {
@@ -128,7 +129,22 @@ class DashboardView : FrameLayout {
 
         private var drawMatrix = Matrix()
 
-        constructor(context: Context, attributeSet: AttributeSet) : super(context, attributeSet)
+        private var percent = 0
+
+        constructor(context: Context, attributeSet: AttributeSet?) : super(context, attributeSet) {
+            context.theme.obtainStyledAttributes(
+                attributeSet,
+                R.styleable.CircularDashboardView,
+                0,
+                0
+            ).apply {
+                try {
+                    percent = getInt(R.styleable.CircularDashboardView_percent, 0)
+                } finally {
+                    recycle()
+                }
+            }
+        }
 
         constructor(context: Context) : super(context)
 
@@ -164,11 +180,9 @@ class DashboardView : FrameLayout {
             paint.style = Paint.Style.STROKE
             paint.strokeWidth = 8f
 
-            // val drawMatrix = Matrix()
-
             radius = center.x - (paintWidth / 5) + DensityUtils.convertDpToPixel(7, context).toInt()
-            var startDegree = 150f  // 165f
-            var endDegree = 395f
+            val startDegree = 150f
+            val endDegree = 390f
             var currentDegree = startDegree
 
             while (currentDegree <= endDegree) {
@@ -178,10 +192,11 @@ class DashboardView : FrameLayout {
                 setPaintInnerStyle()
                 drawInnerMeters(canvas, paint, path, drawMatrix, currentDegree)
                 setPaintOuterStyle()
-                drawOuterMeters(canvas, paint, path, drawMatrix)
+                val percentDegree = (150 + percent * 2.4).toInt()
+                drawOuterMeters(canvas, path, drawMatrix, currentDegree.toInt(), percentDegree)
                 canvas.drawPath(path, paint)
                 path.reset()
-                currentDegree += 6f // 5.625f
+                currentDegree += 6f
                 Log.d(TAG, "currentDegree: $currentDegree")
             }
         }
@@ -196,12 +211,42 @@ class DashboardView : FrameLayout {
             path.reset()
         }
 
-        private fun drawOuterMeters(canvas: Canvas, paint: Paint, path: Path, matrix: Matrix) {
+        private val paintInProgress by lazy {
+            Paint().apply {
+                style = Paint.Style.STROKE
+                strokeWidth = 8f
+                shader = LinearGradient(0f,
+                    0f,
+                    measuredWidth.toFloat(),   // center.x.toFloat()
+                    0f,
+                    intArrayOf(Color.parseColor("#77c7c8"), Color.parseColor("#0070ba")),
+                    floatArrayOf(0f, 0.8f),
+                    Shader.TileMode.CLAMP)
+            }
+        }
+        private val paintOutProgress = Paint().apply {
+            color = Color.LTGRAY
+            style = Paint.Style.STROKE
+            strokeWidth = 8f
+        }
+
+        private fun drawOuterMeters(
+            canvas: Canvas,
+            path: Path,
+            matrix: Matrix,
+            currentDegree: Int,
+            percentDegree: Int
+        ) {
             val originPoint = radius + convertDpToPx(9)
             path.moveTo(originPoint, 0f)
             path.lineTo(originPoint + convertDpToPx(24), 0f)
             path.transform(matrix)
-            canvas.drawPath(path, paint)
+
+            if (currentDegree <= percentDegree) {
+                canvas.drawPath(path, paintInProgress)
+            } else {
+                canvas.drawPath(path, paintOutProgress)
+            }
             path.reset()
         }
 
@@ -227,5 +272,4 @@ class DashboardView : FrameLayout {
     companion object {
         const val TAG = "DashboardView"
     }
-
 }
