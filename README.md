@@ -24,7 +24,6 @@ dependencies {
     android:layout_height="200dp"
     app:labelText="battery"
     app:labelTextSize="18sp"
-    app:layout_constraintStart_toStartOf="parent"
     app:percent="90"
     app:percentTextSize="30sp" />
 ```
