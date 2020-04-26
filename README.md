@@ -3,4 +3,5 @@
 
 ```
 ![image](https://github.com/kmgs4524/CircularDashboardView/blob/master/demo_image.png)
+![image](https://github.com/kmgs4524/CircularDashboardView/blob/master/demo_image.png)
 ```
