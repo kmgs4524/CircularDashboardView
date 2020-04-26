@@ -14,7 +14,7 @@ repositories {
 build.gradle(app)
 ```
 dependencies {
-  implementation 'com.github.kmgs4524:CircularDashboardView:v0.0.1'
+  implementation 'com.github.kmgs4524:CircularDashboardView:0.0.1'
 }
 ```
 ## Usage
